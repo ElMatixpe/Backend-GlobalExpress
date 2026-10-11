@@ -26,8 +26,9 @@ public class Reporte {
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "id_venta", nullable = false)
+    // Opcional: un reporte cubre un período completo, no depende de una sola venta
+    @ManyToOne
+    @JoinColumn(name = "id_venta")
     private Venta venta;
 
     public Integer getIdReporte() { return idReporte; }
@@ -49,3 +50,4 @@ public class Reporte {
     public void setVenta(Venta venta) { this.venta = venta; }
 
 }
+

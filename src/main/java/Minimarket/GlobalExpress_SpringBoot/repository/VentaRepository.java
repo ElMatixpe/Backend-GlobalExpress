@@ -1,6 +1,7 @@
 package Minimarket.GlobalExpress_SpringBoot.repository;
 
 import Minimarket.GlobalExpress_SpringBoot.model.Venta;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,4 +12,8 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
     // Historial filtrado por estado ("Pagado" o "Cancelado")
     List<Venta> findByEstadoOrderByIdVentaDesc(String estado);
+
+    // Ventas de un período: fecha >= inicio y fecha < fin
+    List<Venta> findByFechaGreaterThanEqualAndFechaLessThanOrderByFechaAsc(
+            LocalDateTime inicio, LocalDateTime fin);
 }
