@@ -3,9 +3,11 @@ package Minimarket.GlobalExpress_SpringBoot.controller;
 import Minimarket.GlobalExpress_SpringBoot.dto.VentaRequest;
 import Minimarket.GlobalExpress_SpringBoot.model.DetalleVenta;
 import Minimarket.GlobalExpress_SpringBoot.model.Venta;
+import Minimarket.GlobalExpress_SpringBoot.security.UsuarioSesion;
 import Minimarket.GlobalExpress_SpringBoot.service.VentaService;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,7 +20,6 @@ public class VentaController {
         this.ventaService = ventaService;
     }
 
-    /** GET /api/ventas  |  GET /api/ventas?estado=Pagado  |  GET /api/ventas?estado=Cancelado */
     @GetMapping
     public List<Venta> listar(@RequestParam(required = false) String estado) {
         return ventaService.listar(estado);
@@ -36,7 +37,10 @@ public class VentaController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Venta registrar(@RequestBody VentaRequest solicitud) {
-        return ventaService.registrar(solicitud);
+    public Venta registrar(@RequestBody VentaRequest solicitud, @AuthenticationPrincipal UsuarioSesion sesion) {
+        VentaRequest conVendedor = new VentaRequest(
+                sesion.idUsuario(), solicitud.cliente(), solicitud.metodoPago(),
+                solicitud.estado(), solicitud.detalles());
+        return ventaService.registrar(conVendedor);
     }
 }
