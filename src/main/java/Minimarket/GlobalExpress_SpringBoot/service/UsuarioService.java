@@ -38,7 +38,7 @@ public class UsuarioService {
         if (usuarioRepository.existsByUsername(datos.getUsername().trim())) {
             throw new IllegalArgumentException("Ya existe un usuario con ese nombre de usuario.");
         }
-        // Factory: la fábrica crea el tipo de usuario según el rol
+        // patron factory: la fabrica crea el tipo de usuario según el rol
         Usuario nuevo = usuarioFactory.crearUsuario(
                 datos.getRol(), datos.getNombre().trim(), datos.getUsername().trim(), datos.getContrasena());
         return usuarioRepository.save(nuevo);
@@ -72,7 +72,7 @@ public class UsuarioService {
         usuarioRepository.delete(obtener(id));
     }
 
-    /** Valida las credenciales del Login. Devuelve el usuario (sin contraseña en el JSON). */
+    /** Valida las credenciales del Login. Devuelve el usuario. */
     @Transactional(readOnly = true)
     public Usuario autenticar(String username, String contrasena) {
         if (username == null || contrasena == null) {

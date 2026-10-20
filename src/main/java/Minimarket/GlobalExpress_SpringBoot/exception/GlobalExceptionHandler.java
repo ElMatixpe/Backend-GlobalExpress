@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** Convierte los errores en respuestas JSON {"mensaje": "..."} que el React puede mostrar. */
+/** Convierte los errores en JSON {"mensaje": ...}. Que react lo puede mostrar */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

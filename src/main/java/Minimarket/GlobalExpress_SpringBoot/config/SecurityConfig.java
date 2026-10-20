@@ -18,7 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-/**
+/** Deja /api/usuarios/login como público y protege el resto.
  * Seguridad por roles y CORS 
  * Sin token válido responde 401; con token pero sin permiso, 403.
  */
