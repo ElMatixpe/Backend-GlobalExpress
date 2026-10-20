@@ -1,6 +1,8 @@
 package Minimarket.GlobalExpress_SpringBoot.service;
 
 import Minimarket.GlobalExpress_SpringBoot.dto.DetalleRequest;
+import Minimarket.GlobalExpress_SpringBoot.dto.DetalleVentaDto;
+import Minimarket.GlobalExpress_SpringBoot.dto.VentaHistorialDto;
 import Minimarket.GlobalExpress_SpringBoot.dto.VentaRequest;
 import Minimarket.GlobalExpress_SpringBoot.exception.RecursoNoEncontradoException;
 import Minimarket.GlobalExpress_SpringBoot.model.DetalleVenta;
@@ -9,6 +11,7 @@ import Minimarket.GlobalExpress_SpringBoot.model.Usuario;
 import Minimarket.GlobalExpress_SpringBoot.model.Venta;
 import Minimarket.GlobalExpress_SpringBoot.repository.DetalleVentaRepository;
 import Minimarket.GlobalExpress_SpringBoot.repository.ProductoRepository;
+import Minimarket.GlobalExpress_SpringBoot.repository.ReporteRepository;
 import Minimarket.GlobalExpress_SpringBoot.repository.UsuarioRepository;
 import Minimarket.GlobalExpress_SpringBoot.repository.VentaRepository;
 import java.math.BigDecimal;
@@ -30,24 +33,27 @@ public class VentaService {
     private final DetalleVentaRepository detalleRepository;
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ReporteRepository reporteRepository;
 
     public VentaService(VentaRepository ventaRepository,
                         DetalleVentaRepository detalleRepository,
                         ProductoRepository productoRepository,
-                        UsuarioRepository usuarioRepository) {
+                        UsuarioRepository usuarioRepository,
+                        ReporteRepository reporteRepository) {
         this.ventaRepository = ventaRepository;
         this.detalleRepository = detalleRepository;
         this.productoRepository = productoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.reporteRepository = reporteRepository;
     }
 
     /** Historial. estado = "Pagado", "Cancelado" o null/vacío para todas. */
     @Transactional(readOnly = true)
-    public List<Venta> listar(String estado) {
+    public List<VentaHistorialDto> listar(String estado) {
         if (estado == null || estado.isBlank()) {
-            return ventaRepository.findAllByOrderByIdVentaDesc();
+            return ventaRepository.consultarHistorial();
         }
-        return ventaRepository.findByEstadoOrderByIdVentaDesc(estado);
+        return ventaRepository.consultarHistorialPorEstado(estado);
     }
 
     @Transactional(readOnly = true)
@@ -57,15 +63,51 @@ public class VentaService {
     }
 
     @Transactional(readOnly = true)
-    public List<DetalleVenta> detalles(Integer idVenta) {
-        obtener(idVenta); // lanza 404 si la venta no existe
-        return detalleRepository.findByVentaIdVenta(idVenta);
+    public List<DetalleVentaDto> detalles(Integer idVenta) {
+        obtener(idVenta); 
+        return detalleRepository.consultarDetalle(idVenta);
+    }
+
+    /**
+     * Eliminacion logica: cancela una venta ya registrada. El registro NO se borra: cambia su
+     * estado de "Pagado" a "Cancelado", sigue en el historial y deja de contar como ingreso. */
+    @Transactional
+    public VentaHistorialDto cancelar(Integer id) {
+        Venta venta = obtener(id);
+        if (CANCELADO.equals(venta.getEstado())) {
+            throw new IllegalArgumentException("La venta ya está cancelada.");
+        }
+        venta.setEstado(CANCELADO);
+        Venta guardada = ventaRepository.save(venta);
+        return new VentaHistorialDto(
+                guardada.getIdVenta(),
+                guardada.getFecha(),
+                guardada.getCliente(),
+                guardada.getMetodoPago(),
+                guardada.getEstado(),
+                guardada.getTotal(),
+                guardada.getUsuario().getNombre());
+    }
+
+    /**
+     * eliminacion fisica: borra para siempre una venta CANCELADA y todas sus líneas de detalle.
+     * No se puede deshacer. Una venta Pagada nunca se borra (primero hay que cancelarla).
+     * Los reportes que mencionaban la venta no se borran: solo quedan sin venta asociada. */
+    @Transactional
+    public void eliminarFisicamente(Integer id) {
+        Venta venta = obtener(id);
+        if (!CANCELADO.equals(venta.getEstado())) {
+            throw new IllegalArgumentException(
+                    "Solo se puede eliminar de forma permanente una venta cancelada. Cancélala primero.");
+        }
+        reporteRepository.desvincularVenta(id);
+        detalleRepository.eliminarPorVenta(id);
+        ventaRepository.delete(venta);
     }
 
     /**
      * Registra una venta Pagada (Confirmar Venta) o Cancelada (Cancelar con confirmación).
-     * Los precios salen de la tabla producto y el total se calcula aquí, no en el cliente.
-     */
+     * Los precios salen de la tabla producto y el total se calcula aquí, no en el cliente.     */
     @Transactional
     public Venta registrar(VentaRequest req) {
         if (req == null || req.idUsuario() == null) {

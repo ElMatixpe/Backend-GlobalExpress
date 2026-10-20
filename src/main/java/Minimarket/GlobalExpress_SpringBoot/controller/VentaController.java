@@ -1,7 +1,8 @@
 package Minimarket.GlobalExpress_SpringBoot.controller;
 
 import Minimarket.GlobalExpress_SpringBoot.dto.VentaRequest;
-import Minimarket.GlobalExpress_SpringBoot.model.DetalleVenta;
+import Minimarket.GlobalExpress_SpringBoot.dto.DetalleVentaDto;
+import Minimarket.GlobalExpress_SpringBoot.dto.VentaHistorialDto;
 import Minimarket.GlobalExpress_SpringBoot.model.Venta;
 import Minimarket.GlobalExpress_SpringBoot.security.UsuarioSesion;
 import Minimarket.GlobalExpress_SpringBoot.service.VentaService;
@@ -20,8 +21,9 @@ public class VentaController {
         this.ventaService = ventaService;
     }
 
+    /** GET /api/ventas  |  GET /api/ventas?estado=Pagado  |  GET /api/ventas?estado=Cancelado */
     @GetMapping
-    public List<Venta> listar(@RequestParam(required = false) String estado) {
+    public List<VentaHistorialDto> listar(@RequestParam(required = false) String estado) {
         return ventaService.listar(estado);
     }
 
@@ -31,8 +33,21 @@ public class VentaController {
     }
 
     @GetMapping("/{id}/detalles")
-    public List<DetalleVenta> detalles(@PathVariable Integer id) {
+    public List<DetalleVentaDto> detalles(@PathVariable Integer id) {
         return ventaService.detalles(id);
+    }
+
+    /** Eliminación logica: PUT /api/ventas/{id}/cancelar (Administrador y Cajero) */
+    @PutMapping("/{id}/cancelar")
+    public VentaHistorialDto cancelar(@PathVariable Integer id) {
+        return ventaService.cancelar(id);
+    }
+
+    /** Eliminación fisica: DELETE /api/ventas/{id} (solo Administrador, solo ventas canceladas) */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminar(@PathVariable Integer id) {
+        ventaService.eliminarFisicamente(id);
     }
 
     @PostMapping

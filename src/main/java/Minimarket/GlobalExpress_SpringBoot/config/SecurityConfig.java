@@ -19,7 +19,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Seguridad por roles y CORS.
+ * Seguridad por roles y CORS 
  * Sin token válido responde 401; con token pero sin permiso, 403.
  */
 @Configuration
@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reportes/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").authenticated()
                         .requestMatchers("/api/productos/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/ventas/**").authenticated()
                         .anyRequest().authenticated());
         return http.build();
